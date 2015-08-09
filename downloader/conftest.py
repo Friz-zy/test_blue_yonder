@@ -28,5 +28,5 @@ def links():
 @pytest.fixture()
 def file(tmpdir, links):
     p = tmpdir.join("links.txt")
-    p.write(['%s\n' % l[0] for l in links])
+    p.write('\n'.join([l[0] for l in links]))
     return str(p)

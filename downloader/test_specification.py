@@ -27,7 +27,7 @@ def test_dowload_files_from_internet(tmpdir, caplog, file, links):
 
     """
     output_dir = str(tmpdir.mkdir('download'))
-    arguments = ['downloader', str(file), output_dir]
+    arguments = [str(file), output_dir]
     downloader.main(arguments)
 
     caplog.setLevel(logging.INFO)
@@ -39,7 +39,8 @@ def test_dowload_files_from_internet(tmpdir, caplog, file, links):
     listdir = os.listdir(output_dir)
 
     # all links exists in log
-    assert all(link[0] in info for link in links)
+    assert all(link[0] in info for link in links) or \
+        all(link[0] in error for link in links)
 
     for link in links:
         name = link[0].split('/')[-1]
@@ -60,8 +61,9 @@ def test_parse_file(tmpdir, caplog, file, links):
 
     """
     output_dir = str(tmpdir.mkdir('download'))
-    arguments = ['downloader', str(file), output_dir]
+    arguments = [str(file), output_dir]
     args = downloader.cli(arguments)
+    print args.links
     assert args.links == [l[0] for l in links]
 
 def test_download_one_file_to_the_right_place(tmpdir, caplog, links):
@@ -94,10 +96,10 @@ def test_async_map_run_all_functions():
       async_map run all functions
 
     """
-    function = lambda x: x
-    arguments = xrange(0, 9)
+    function = lambda x, y: (x, y)
+    arguments = [(x, x) for x in xrange(0, 9)]
     pool_size = None
     resulsts = downloader.async_map(
         function, arguments, pool_size
         )
-    assert sorted(resulsts) == range(0, 9)
+    assert sorted(resulsts) == zip(range(0, 9), range(0,9))
