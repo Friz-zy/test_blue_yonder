@@ -13,10 +13,11 @@ Copyright (c) 2015 Filipp Kucheryavy aka Frizzy <filipp.s.frizzy@gmail.com>
 import os
 import pytest
 import hashlib
+import logging
 import downloader
 
 
-def test_dowload_files_from_internet(tmpdir, capsys, file, links):
+def test_dowload_files_from_internet(tmpdir, caplog, file, links):
     """Test for downloader.main
 
     Assertions:
@@ -28,20 +29,30 @@ def test_dowload_files_from_internet(tmpdir, capsys, file, links):
     output_dir = str(tmpdir.mkdir('download'))
     arguments = ['downloader', str(file), output_dir]
     downloader.main(arguments)
-    out, err = capsys.readouterr()
+
+    caplog.setLevel(logging.INFO)
+    out = caplog.records()
+    info = '\n'.join([o.message for o in out if o.levelname == 'INFO'])
+    errors = [o.message for o in out if o.levelname == 'ERROR']
+    error = '\n'.join(errors)
+
     listdir = os.listdir(output_dir)
-    assert all(link[0] in out for link in links)
-    assert len(listdir) == len(links) or 'ERROR' in out
+
+    # all links exists in log
+    assert all(link[0] in info for link in links)
+
     for link in links:
         name = link[0].split('/')[-1]
-        assert name in listdir or (link[0] in out and 'ERROR' in out)
+        # files stored or exception exists in log
+        assert name in listdir or link[0] in error
         if name not in listdir:
             continue
         with open(os.path.join(output_dir, name), 'rb') as f:
             digest = hashlib.md5(f.read()).digest()
+        # files stored with right md5 sum
         assert digest == link[1]
 
-def test_parse_file(tmpdir, capsys, file, links):
+def test_parse_file(tmpdir, caplog, file, links):
     """Test for downloader.cli
 
     Assertions:
@@ -53,7 +64,7 @@ def test_parse_file(tmpdir, capsys, file, links):
     args = downloader.cli(arguments)
     assert args.links == [l[0] for l in links]
 
-def test_download_one_file_to_the_right_place(tmpdir, capsys, links):
+def test_download_one_file_to_the_right_place(tmpdir, caplog, links):
     """Test for downloader.get_file
 
     Assertions:
@@ -65,14 +76,16 @@ def test_download_one_file_to_the_right_place(tmpdir, capsys, links):
     mdsum = links[0][1]
     output_dir = str(tmpdir.mkdir('download'))
     downloader.get_file(link, output_dir)
-    out, err = capsys.readouterr()
+    caplog.setLevel(logging.ERROR)
+    out = caplog.records()[0]
     listdir = os.listdir(output_dir)
-    assert len(listdir) == 1 or (link in out and 'ERROR' in out)
-    name = listdir[0]
-    assert name == link.split('/')[-1] or (link in out and 'ERROR' in out)
-    with open(os.path.join(output_dir, name), 'rb') as f:
-        digest = hashlib.md5(f.read()).digest()
-    assert digest == mdsum
+    assert len(listdir) == 1 or link in out.message
+    if listdir:
+        name = listdir[0]
+        assert name == link.split('/')[-1]
+        with open(os.path.join(output_dir, name), 'rb') as f:
+            digest = hashlib.md5(f.read()).digest()
+        assert digest == mdsum
 
 def test_async_map_run_all_functions():
     """Test for downloader.async_map
