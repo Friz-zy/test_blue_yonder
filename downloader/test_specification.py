@@ -23,11 +23,10 @@ def test_dowload_files_from_internet(tmpdir, caplog, file, links):
     Assertions:
       all links exists in log
       files stored or exception exists in log
-      files stored with right md5 sum
 
     """
     output_dir = str(tmpdir.mkdir('download'))
-    arguments = [str(file), output_dir]
+    arguments = ['downloader', str(file), output_dir]
     downloader.main(arguments)
 
     caplog.setLevel(logging.INFO)
@@ -39,19 +38,13 @@ def test_dowload_files_from_internet(tmpdir, caplog, file, links):
     listdir = os.listdir(output_dir)
 
     # all links exists in log
-    assert all(link[0] in info for link in links) or \
-        all(link[0] in error for link in links)
+    assert all(link in info for link in links) or \
+        all(link in error for link in links)
 
     for link in links:
-        name = link[0].split('/')[-1]
+        name = link.split('/')[-1]
         # files stored or exception exists in log
-        assert name in listdir or link[0] in error
-        if name not in listdir:
-            continue
-        with open(os.path.join(output_dir, name), 'rb') as f:
-            digest = hashlib.md5(f.read()).digest()
-        # files stored with right md5 sum
-        assert digest == link[1]
+        assert name in listdir or link in error
 
 def test_parse_file(tmpdir, caplog, file, links):
     """Test for downloader.cli
@@ -61,10 +54,10 @@ def test_parse_file(tmpdir, caplog, file, links):
 
     """
     output_dir = str(tmpdir.mkdir('download'))
-    arguments = [str(file), output_dir]
+    arguments = ['downloader', str(file), output_dir]
     args = downloader.cli(arguments)
     print args.links
-    assert args.links == [l[0] for l in links]
+    assert args.links == [l for l in links]
 
 def test_download_one_file_to_the_right_place(tmpdir, caplog, links):
     """Test for downloader.get_file
@@ -74,8 +67,7 @@ def test_download_one_file_to_the_right_place(tmpdir, caplog, links):
       file stored with right md5 sum
 
     """
-    link = links[0][0]
-    mdsum = links[0][1]
+    link = links[0]
     output_dir = str(tmpdir.mkdir('download'))
     downloader.get_file(link, output_dir)
     caplog.setLevel(logging.ERROR)
@@ -85,9 +77,6 @@ def test_download_one_file_to_the_right_place(tmpdir, caplog, links):
     if listdir:
         name = listdir[0]
         assert name == link.split('/')[-1]
-        with open(os.path.join(output_dir, name), 'rb') as f:
-            digest = hashlib.md5(f.read()).digest()
-        assert digest == mdsum
 
 def test_async_map_run_all_functions():
     """Test for downloader.async_map
