@@ -96,8 +96,8 @@ def test_async_map_run_all_functions():
     """
     function = lambda x: x
     arguments = xrange(0, 9)
-    pool_size = 2
+    pool_size = None
     resulsts = downloader.async_map(
         function, arguments, pool_size
         )
-    assert sorted(resulsts) == xrange(0, 9)
+    assert sorted(resulsts) == range(0, 9)
