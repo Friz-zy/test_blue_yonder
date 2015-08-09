@@ -17,7 +17,7 @@ __license__ = "Apache 2.0"
 __maintainer__ = "Filipp Frizzy"
 __email__ = "filipp.s.frizzy@gmail.com"
 __status__ = "Development"
-__version__ = '1.0'
+__version__ = '1.1'
 
 
 from .downloader import *
