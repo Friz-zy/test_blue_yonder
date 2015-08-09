@@ -8,15 +8,15 @@ Copyright (c) 2015 Filipp Kucheryavy aka Frizzy <filipp.s.frizzy@gmail.com>
 """
 
 
-import os
-import sys
-import urllib
-import logging
-import argparse
-
-import gevent
 from gevent import monkey, pool
 monkey.patch_all()
+
+import os
+import sys
+import shutil       
+import logging
+import requests
+import argparse
 
 
 logging.basicConfig(
@@ -46,6 +46,9 @@ def cli(arguments=sys.argv):
                 return s.read().splitlines()
         return string.split(',')
 
+    if arguments != sys.argv:
+        sys.argv = arguments
+
     parser = argparse.ArgumentParser(
         description='Download files from the internet.'
         )
@@ -54,11 +57,11 @@ def cli(arguments=sys.argv):
                     'or links separated by commas'
                     )
     parser.add_argument('destination', type=str,
-                    default=os.getcwd(),
+                    default=os.getcwd(), nargs='?',
                     help='Save path, default is current dir'
                     )
 
-    return parser.parse_args(arguments)
+    return parser.parse_args()
 
 def get_file(link, output_dir=os.getcwd()):
     """Download file from internet
@@ -77,9 +80,21 @@ def get_file(link, output_dir=os.getcwd()):
     name = os.path.join(output_dir, link.split('/')[-1])
     logging.debug('Start downloading: %s as %s', link, name)
     try:
-        urllib.urlretrieve(url=link, filename=name)
-        logging.info('Finishing downloading: %s as %s', link, name)
-        return 0
+        # use request instead of urllib because of bug
+        # https://github.com/Code4SA/address2ward/issues/14
+        r = requests.get(link, stream=True)
+        if r.status_code == 200:
+            with open(name, 'wb') as f:
+                r.raw.decode_content = True
+                shutil.copyfileobj(r.raw, f)
+            logging.info('Finishing downloading: %s as %s',
+                         link, name
+                         )
+            return 0
+        else:
+            logging.error('Can not download %s: status %s', 
+                          link, r.status_code
+                          )
     except Exception as e:
         logging.error('Can not download %s: %s', link, e)
         return link
