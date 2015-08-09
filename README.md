@@ -10,3 +10,5 @@ Write a script or program that takes this plaintext file as an argument and down
 storing them on the local hard disk.
 Approach the problem as you would any task in a normal day's work: as if this code will be used in
 important live systems, modified later on by other developers, and so on.
+
+[Why I do not use PEP 8](https://medium.com/@drb/pep-8-beautiful-code-and-the-tyranny-of-guidelines-f96499f5ac17)
