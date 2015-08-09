@@ -12,6 +12,7 @@ import os
 import sys
 import urllib
 import logging
+import argparse
 
 import gevent
 from gevent import monkey, pool
@@ -29,7 +30,35 @@ logging.basicConfig(
 
 
 def cli(arguments=sys.argv):
-    pass
+    """Cli with argparse
+
+    Args:
+      arguments (tuple): arguments for cli,
+        default is sys.argv
+
+    Return:
+      argparse namespace object like args
+
+    """
+    def loader(string):
+        if os.path.exists(string):
+            with open(string) as s:
+                return s.read().splitlines()
+        return string.split(',')
+
+    parser = argparse.ArgumentParser(
+        description='Download files from the internet.'
+        )
+    parser.add_argument('links', type=loader,
+                    help='Path to file with links '
+                    'or links separated by commas'
+                    )
+    parser.add_argument('destination', type=str,
+                    default=os.getcwd(),
+                    help='Save path, default is current dir'
+                    )
+
+    return parser.parse_args(arguments)
 
 def get_file(link, output_dir=os.getcwd()):
     """Download file from internet
@@ -44,6 +73,7 @@ def get_file(link, output_dir=os.getcwd()):
       link if fail
 
     """
+    print link
     name = os.path.join(output_dir, link.split('/')[-1])
     logging.debug('Start downloading: %s as %s', link, name)
     try:
@@ -57,6 +87,8 @@ def get_file(link, output_dir=os.getcwd()):
 def async_map(function, arguments, pool_size=None):
     """Wrapper over gevent.pool.Pool
 
+    Allow use functions with multiple arguments.
+
     Args:
       function (object): function for execution
       arguments (iterable): list of argiments for function
@@ -68,10 +100,25 @@ def async_map(function, arguments, pool_size=None):
 
     """
     pl = pool.Pool(pool_size)
-    return pl.map(function, arguments)
+    return pl.map(lambda args: function(*args), arguments)
 
 def main(arguments=sys.argv):
-    pass
+    """Downloader
+
+    Args:
+      arguments (tuple): arguments for cli,
+        default is sys.argv
+
+    Return:
+      0 if all links succesfully downloaded
+      1 otherwise
+
+    """
+    args = cli(arguments)
+    args = [(link, args.destination) for link in args.links]
+    if any(async_map(get_file, args)):
+        return 1
+    return 0
 
 
 if '__name__' == '__main__':
