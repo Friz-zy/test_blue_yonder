@@ -54,8 +54,21 @@ def get_file(link, output_dir=os.getcwd()):
         logging.error('Can not download %s: %s', link, e)
         return link
 
-def async_map(function, arguments, pool_size=0):
-    pass
+def async_map(function, arguments, pool_size=None):
+    """Wrapper over gevent.pool.Pool
+
+    Args:
+      function (object): function for execution
+      arguments (iterable): list of argiments for function
+      pool_size (int): max pool size,
+        default is None - unlimited
+
+    Return:
+      list of resulsts
+
+    """
+    pl = pool.Pool(pool_size)
+    return pl.map(function, arguments)
 
 def main(arguments=sys.argv):
     pass
